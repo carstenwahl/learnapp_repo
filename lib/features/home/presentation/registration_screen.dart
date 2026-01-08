@@ -1,32 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'selection_screen.dart';
-import 'registration_screen.dart';
-import 'forgot_password_screen.dart';
+import 'confirmation_screen.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class RegistrationScreen extends StatefulWidget {
+  const RegistrationScreen({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<RegistrationScreen> createState() => _RegistrationScreenState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _secureStorage = const FlutterSecureStorage();
+
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -36,40 +38,33 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      // Get stored credentials from registration
-      final storedEmail = await _secureStorage.read(key: 'user_email');
-      final storedPassword = await _secureStorage.read(key: 'user_password_hash');
+      final email = _emailController.text.trim();
+      
+      // Store user credentials securely in local storage
+      // In a real app, you would send this to Firebase Auth backend
+      await _secureStorage.write(
+        key: 'user_email',
+        value: email,
+      );
+      
+      await _secureStorage.write(
+        key: 'user_password_hash',
+        value: _passwordController.text, // In production, hash this before storing
+      );
 
-      final enteredEmail = _emailController.text.trim();
-      final enteredPassword = _passwordController.text;
-
-      // Check if credentials match
-      if (storedEmail == null || storedPassword == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Kein Konto gefunden. Bitte erstellen Sie zuerst ein Konto.')),
-          );
-        }
-      } else if (storedEmail == enteredEmail && storedPassword == enteredPassword) {
-        // Credentials match - navigate to selection screen
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const SelectionScreen()),
-          );
-        }
-      } else {
-        // Credentials don't match
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('E-Mail oder Passwort ist falsch')),
-          );
-        }
+      if (mounted) {
+        // Navigate to confirmation screen showing email verification info
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ConfirmationScreen(email: email),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler beim Anmelden: $e')),
+          SnackBar(content: Text('Fehler: $e')),
         );
       }
     } finally {
@@ -81,26 +76,12 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _handleCreateAccount() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const RegistrationScreen()),
-    );
-  }
-
-  void _handleForgotPassword() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('LearnApp'),
+        title: const Text('Konto erstellen'),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -113,7 +94,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   // Title
                   Text(
-                    'Anmelden',
+                    'Neues Konto',
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 32),
@@ -147,7 +128,7 @@ class _HomePageState extends State<HomePage> {
                     controller: _passwordController,
                     decoration: InputDecoration(
                       labelText: 'Passwort',
-                      hintText: 'Geben Sie Ihr Passwort ein',
+                      hintText: 'Geben Sie ein Passwort ein',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -168,7 +149,7 @@ class _HomePageState extends State<HomePage> {
                     obscureText: _obscurePassword,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Bitte geben Sie Ihr Passwort ein';
+                        return 'Bitte geben Sie ein Passwort ein';
                       }
                       if (value.length < 6) {
                         return 'Passwort muss mindestens 6 Zeichen lang sein';
@@ -176,13 +157,49 @@ class _HomePageState extends State<HomePage> {
                       return null;
                     },
                   ),
+                  const SizedBox(height: 16),
+
+                  // Confirm Password Field
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    decoration: InputDecoration(
+                      labelText: 'Passwort bestätigen',
+                      hintText: 'Geben Sie Ihr Passwort erneut ein',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      prefixIcon: const Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirmPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureConfirmPassword = !_obscureConfirmPassword;
+                          });
+                        },
+                      ),
+                    ),
+                    obscureText: _obscureConfirmPassword,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Bitte bestätigen Sie Ihr Passwort';
+                      }
+                      if (value != _passwordController.text) {
+                        return 'Passwörter stimmen nicht überein';
+                      }
+                      return null;
+                    },
+                  ),
                   const SizedBox(height: 24),
 
-                  // Login Button
+                  // Sign Up Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : _handleLogin,
+                      onPressed: _isLoading ? null : _handleSignUp,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: _isLoading
@@ -194,7 +211,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               )
                             : const Text(
-                                'Anmelden',
+                                'Konto erstellen',
                                 style: TextStyle(fontSize: 16),
                               ),
                       ),
@@ -202,39 +219,10 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Forgot Password Link
+                  // Back Button
                   TextButton(
-                    onPressed: _handleForgotPassword,
-                    child: const Text('Passwort vergessen?'),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Divider
-                  const Row(
-                    children: [
-                      Expanded(child: Divider()),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: Text('Oder'),
-                      ),
-                      Expanded(child: Divider()),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Create Account Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: _handleCreateAccount,
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          'Konto erstellen',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Zurück zur Anmeldung'),
                   ),
                 ],
               ),
