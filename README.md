@@ -1,16 +1,23 @@
 # learnapp
 
-A new Flutter project.
+This project was refactored to adopt a feature-based, clean-architecture layout.
 
-## Getting Started
+Core additions
 
-This project is a starting point for a Flutter application.
+- `lib/core/network/` — `NetworkClient` interface and placeholder `HttpNetworkClient` implementation. Implement with `dio` or `http` for real network calls.
+- `lib/core/error/` — `Failure` base type and common failures like `ServerFailure` and `CacheFailure`.
+- `lib/core/usecases/` — Generic `UseCase<Result, Params>` base class and `NoParams` helper for domain usecases.
 
-A few resources to get you started if this is your first Flutter project:
+Quick actions
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+flutter pub get
+flutter analyze
+flutter test
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Next steps
+
+- Implement concrete network client (e.g. with `dio`) and register in DI.
+- Expand `core/` with logging, interceptors, and error mappings.
+- Add more domain features and tests per feature.
