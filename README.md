@@ -1,23 +1,39 @@
-# learnapp
+# LearnApp
 
-This project was refactored to adopt a feature-based, clean-architecture layout.
+A minimal Flutter project demonstrating clean architecture principles with navigation and list views.
 
-Core additions
+## Features
 
-- `lib/core/network/` — `NetworkClient` interface and placeholder `HttpNetworkClient` implementation. Implement with `dio` or `http` for real network calls.
-- `lib/core/error/` — `Failure` base type and common failures like `ServerFailure` and `CacheFailure`.
-- `lib/core/usecases/` — Generic `UseCase<Result, Params>` base class and `NoParams` helper for domain usecases.
+- Simple start screen with 2 buttons
+- Navigation to selection screen
+- List display with 5 items (symbol + text)
+- Clean project structure
 
-Quick actions
+## Project Structure
+
+```
+lib/
+├── main.dart
+├── app/app.dart
+└── features/home/presentation/
+    ├── home_page.dart
+    ├── home_controller.dart
+    └── selection_screen.dart
+```
+
+## Quick Start
 
 ```bash
 flutter pub get
+flutter run
 flutter analyze
 flutter test
 ```
 
-Next steps
+## Architecture
 
-- Implement concrete network client (e.g. with `dio`) and register in DI.
-- Expand `core/` with logging, interceptors, and error mappings.
-- Add more domain features and tests per feature.
+- Minimal dependencies
+- Feature-based folder structure
+- Simple state management (StatelessWidget/StatefulWidget)
+- No complex DI framework - ready to scale when needed
+
